@@ -5,6 +5,7 @@ const twilio = require('twilio');
 const mongoose = require('mongoose');
 const WaytrixUser = require('../models/Auth'); 
 const WaytrixVideo = require('../models/Video'); 
+const WaytrixPartners = require('../models/Partners'); 
 
 
 const delete_resto = async (req, res) => {
@@ -415,9 +416,56 @@ const updateWaiter = async (req, res) => {
     res.status(500).json({ message: 'Error updating waiter', error });
   }
 };
+const getTableNameByTableId = async (req, res) => {
+  try {
+    const { tableId } = req.body;
 
+    // Ensure tableId is provided
+    if (!tableId) {
+      return res.status(400).json({ message: 'tableId is required' });
+    }
 
+    // Find the table with the provided tableId
+    const table = await WaytrixUser.findOne({ _id: tableId, role: 'table' }, 'name');
 
+    // Check if the table exists
+    if (!table) {
+      return res.status(404).json({ message: 'Table not found' });
+    }
+
+    // Return the table name
+    res.status(200).json({ tableName: table.name });
+  } catch (error) {
+    console.error('Error retrieving table name:', error);
+    res.status(500).json({ message: 'Internal server error', error });
+  }
+};
+
+// Get Partner Name by partnerId
+const getPartnerNameByPartnerId = async (req, res) => {
+  try {
+    const { partnerId } = req.body;
+
+    // Ensure partnerId is provided
+    if (!partnerId) {
+      return res.status(400).json({ message: 'partnerId is required' });
+    }
+
+    // Find the partner with the provided partnerId
+    const partner = await WaytrixPartners.findOne({ _id: new mongoose.Types.ObjectId(partnerId) }, 'name');
+
+    // Check if the partner exists
+    if (!partner) {
+      return res.status(404).json({ message: 'Partner not found' });
+    }
+
+    // Return the partner name
+    res.status(200).json({ partnerName: partner.name });
+  } catch (error) {
+    console.error('Error retrieving partner name:', error);
+    res.status(500).json({ message: 'Internal server error', error });
+  }
+};
 
 
 
@@ -984,4 +1032,4 @@ const verifyUser = async (req, res) => {
   };
   
 
-module.exports = { delete_resto,signup,GetWaytersByRestoId,GetTablesByRestoId,update_waiter_tableId_array, login,GetTableLocations,getRestoInfo, verifyUser, generateForgotKey,updatePassword,signupTableValet, getTableAccounts, signupWaiter, signupResto, getNumberOfWaitersByRestoId, getNumberOfTablesByRestoId, getTablesByRestoId, deleteTable, updateTable, getValetAccounts, deleteValet, updateValet, getTotalVideoLengthByRestoId, getAllVideosByRestoId, deleteVideoByTableId, updateVideoOrder, getWaitersByRestoId, deleteWaiter, updateWaiter };
+module.exports = { delete_resto,signup,GetWaytersByRestoId,GetTablesByRestoId,update_waiter_tableId_array, login,GetTableLocations,getRestoInfo, verifyUser, generateForgotKey,updatePassword,signupTableValet, getTableAccounts, signupWaiter, signupResto, getNumberOfWaitersByRestoId, getNumberOfTablesByRestoId, getTablesByRestoId, deleteTable, updateTable, getValetAccounts, deleteValet, updateValet, getTotalVideoLengthByRestoId, getAllVideosByRestoId, deleteVideoByTableId, updateVideoOrder, getWaitersByRestoId, deleteWaiter, updateWaiter, getTableNameByTableId, getPartnerNameByPartnerId };
