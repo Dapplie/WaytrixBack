@@ -58,8 +58,9 @@ const AddPoints = async (req, res) => {
     }
 }
 const UserRedeemInfo = async (req, res) => {
-    const { customerId, redeemName, redeemPhone } = req.body;
-console.log(req.body)
+    const { customerId, redeemName, redeemEmail } = req.body; // Update to redeemEmail
+    console.log(req.body);
+    
     try {
         // Ensure ObjectId is imported
         const { ObjectId } = require('mongodb');
@@ -76,32 +77,41 @@ console.log(req.body)
 
         // Update or add redeem information
         user.redeemName = redeemName;
-        user.redeemPhone = redeemPhone;
+        user.redeemEmail = redeemEmail; // Store email
         user.redeemKey = redeemKey;
 
         await user.save();
 
-        // Ensure Twilio client is imported and configured
-        const accountSid = 'AC4944717e328b60d7e65888699b08bd63';
-        const authToken = '16d9623e7735ae0c7c8e8f5791106a89';
-        const client = require('twilio')(accountSid, authToken);
+        // Send email with redeemKey using Nodemailer
+        const transporter = nodemailer.createTransport({
+            service: 'yahoo',
+            auth: {
+                user: 'pierreghoul@yahoo.com', // Your email
+                pass: 'nsxmtrpmakdzduar' // Your email password
+            }
+        });
 
-        // Send SMS with redeemKey using Twilio
-        client.messages
-            .create({
-                body: `Your redeem key is ${redeemKey}, please save it for later use`,
-                from: '+16508604551',
-                to: `+${redeemPhone}`
-            })
-            .then(message => console.log(message.sid))
-            .catch(error => console.error('Error sending SMS:', error));
+        const mailOptions = {
+            from: 'pierreghoul@yahoo.com',
+            to: redeemEmail, // Use redeemEmail from request
+            subject: 'Your Redeem Key',
+            text: `Your redeem key is ${redeemKey}, please save it for later use`
+        };
+
+        transporter.sendMail(mailOptions, (error, info) => {
+            if (error) {
+                console.error('Email error:', error);
+            } else {
+                console.log('Email sent:', info.response);
+            }
+        });
 
         return res.status(200).json({ message: 'Redeem information updated successfully' });
     } catch (error) {
         console.error(error);
         return res.status(500).json({ message: 'Internal server error' });
     }
-}
+};
 
 // beloww
 const Redeem = async (req, res) => {
@@ -135,7 +145,7 @@ const Redeem = async (req, res) => {
 
         // Log customer email
         console.log('Customer Email:', user.email);
-
+        console.log('pointsssssssssss: ', customer.points);
         // Check if the customer has enough points to redeem the voucher
         if (customer.points < voucher.pointsCost) {
             return res.status(400).json({ message: 'Insufficient points to redeem voucher' });
@@ -167,15 +177,15 @@ const Redeem = async (req, res) => {
 
         // Send professional emails
         const transporter = nodemailer.createTransport({
-            service: 'gmail',
+            service: 'yahoo',
             auth: {
-                user: 'dollarrami75@gmail.com',
-                pass: 'tdco ogya momt kdee'
+                user: 'pierreghoul@yahoo.com',
+                pass: 'nsxmtrpmakdzduar'
             }
         });
 
         const mailOptions = {
-            from: 'your-email@example.com',
+            from: 'pierreghoul@yahoo.com',
             to: [voucher.email, user.email, 'superadmin@gmail.com'],
             subject: 'Voucher Redeemed Successfully',
             html: `

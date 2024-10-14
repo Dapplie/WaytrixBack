@@ -220,4 +220,31 @@ const AddVideo = async (req, res) => {
 
 
 
-module.exports = {AddVideo, GetOneVideo,get_one_for_loop_id_video_for_future_update,GetOneVideoPreview,update_forLoopId_video_records, GetAllRestoAccounts, getAllTablesByRestoId}
+
+const getTotalVideosForPartner = async (req, res) => {
+  try {
+    const { partnerId } = req.body;
+
+    // Check if partnerId is provided
+    if (!partnerId) {
+      return res.status(400).send({ error: 'partnerId is required' });
+    }
+
+    // Find all videos associated with the given partnerId
+    const totalVideos = await WaytrixVideo.countDocuments({ partnerId });
+
+    // Return the total number of videos
+    res.send({ totalVideos });
+  } catch (error) {
+    // Handle any errors that occur during the process
+    res.status(500).send({ error: 'An error occurred while fetching the total number of videos.' });
+  }
+};
+
+
+
+
+
+
+
+module.exports = {AddVideo, GetOneVideo,get_one_for_loop_id_video_for_future_update,GetOneVideoPreview,update_forLoopId_video_records, GetAllRestoAccounts, getAllTablesByRestoId, getTotalVideosForPartner}

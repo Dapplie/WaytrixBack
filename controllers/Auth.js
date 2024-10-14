@@ -467,7 +467,270 @@ const getPartnerNameByPartnerId = async (req, res) => {
   }
 };
 
+const addTablet = async (req, res) => {
+  try {
+    const { name, email, phone, password, restoId, role } = req.body;
 
+    // Validate the required fields
+    if (!name || !email || !phone || !password || !restoId || role !== 'table') {
+      return res.status(400).json({ message: 'Missing required fields or invalid role' });
+    }
+
+    // Check if the tablet already exists for this restoId
+    const existingTablet = await WaytrixUser.findOne({ email, restoId, role: 'table' });
+    if (existingTablet) {
+      return res.status(400).send('Tablet already exists for this restaurant');
+    }
+
+    // Generate a random 6-digit verification key
+    const verificationKey = Math.floor(100000 + Math.random() * 900000);
+
+    // Hash the password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Create a new tablet user
+    const newTablet = new WaytrixUser({
+      name,    // Include the name field
+      email,
+      phone,   // Include the phone field
+      password: hashedPassword,
+      role: 'table',
+      restoId,
+      smsVerified: true,
+      verified: true,
+      verificationKey,
+    });
+
+    // Save the tablet user to the database
+    await newTablet.save();
+
+    // Generate JWT token
+    const token = jwt.sign({ userId: newTablet._id, role: newTablet.role }, 'your_jwt_secret', { expiresIn: '365d' });
+
+    // Return the new tablet's token
+    res.status(201).json({ token, message: 'Tablet added successfully' });
+  } catch (error) {
+    console.error('Error adding tablet:', error);
+    res.status(500).json({ message: 'Server error', error });
+  }
+};
+
+const getMaleCustomerCountByAgeGroup = async (req, res) => {
+  try {
+    // Fetch male customers that are not deleted
+    const maleCustomers = await WaytrixUser.find({
+      gender: 'male',
+      deleted: { $ne: true }
+    });
+
+    // Initialize counters for each age group
+    let ageGroupCounts = {
+      "0-20": 0,
+      "20-40": 0,
+      "40+": 0
+    };
+
+    // Iterate through the customers to categorize by age
+    maleCustomers.forEach(customer => {
+      if (customer.age >= 0 && customer.age < 20) {
+        ageGroupCounts["0-20"]++;
+      } else if (customer.age >= 20 && customer.age < 40) {
+        ageGroupCounts["20-40"]++;
+      } else if (customer.age >= 40) {
+        ageGroupCounts["40+"]++;
+      }
+    });
+
+    // Prepare the final output in the required format
+    const result = Object.keys(ageGroupCounts).map(ageGroup => ({
+      ageGroup: ageGroup,
+      count: ageGroupCounts[ageGroup]
+    }));
+
+    // Check if there are any counts available
+    if (result.every(group => group.count === 0)) {
+      return res.status(404).json({ message: 'No male customers found' });
+    }
+
+    res.status(200).json(result);
+  } catch (error) {
+    console.error('Error fetching male customer count:', error);
+    res.status(500).json({ message: 'Server error', error });
+  }
+};
+
+
+
+const getFemaleCustomerCountByAgeGroup = async (req, res) => {
+  try {
+    // Fetch male customers that are not deleted
+    const femaleCustomers = await WaytrixUser.find({
+      gender: 'female',
+      deleted: { $ne: true }
+    });
+
+    // Initialize counters for each age group
+    let ageGroupCounts = {
+      "0-20": 0,
+      "20-40": 0,
+      "40+": 0
+    };
+
+    // Iterate through the customers to categorize by age
+    femaleCustomers.forEach(customer => {
+      if (customer.age >= 0 && customer.age < 20) {
+        ageGroupCounts["0-20"]++;
+      } else if (customer.age >= 20 && customer.age < 40) {
+        ageGroupCounts["20-40"]++;
+      } else if (customer.age >= 40) {
+        ageGroupCounts["40+"]++;
+      }
+    });
+
+    // Prepare the final output in the required format
+    const result = Object.keys(ageGroupCounts).map(ageGroup => ({
+      ageGroup: ageGroup,
+      count: ageGroupCounts[ageGroup]
+    }));
+
+    // Check if there are any counts available
+    if (result.every(group => group.count === 0)) {
+      return res.status(404).json({ message: 'No female customers found' });
+    }
+
+    res.status(200).json(result);
+  } catch (error) {
+    console.error('Error fetching female customer count:', error);
+    res.status(500).json({ message: 'Server error', error });
+  }
+};
+
+const incrementTotalTimesSigned = async (req, res) => {
+  const { userId } = req.body;
+
+  try {
+    // Check if userId is provided
+    if (!userId) {
+      return res.status(400).json({ message: 'userId is required' });
+    }
+
+    // Validate if it's a valid MongoDB ObjectId
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({ message: 'Invalid user ID' });
+    }
+
+    // Find the user by ID and increment totalTimesSigned by 1
+    const updatedUser = await WaytrixUser.findOneAndUpdate(
+      { _id: userId },
+      { $inc: { totalTimesSigned: 1 } },
+      { new: true }
+    );
+
+    // If user not found, return 404
+    if (!updatedUser) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Return success with updated user data
+    return res.status(200).json({
+      message: 'totalTimesSigned incremented successfully',
+      updatedUser,
+    });
+  } catch (error) {
+    console.error('Error incrementing totalTimesSigned:', error);
+    return res.status(500).json({ message: 'Server error', error });
+  }
+};
+
+const getMaleCustomerCountByAgeGroupTotalSigned = async (req, res) => {
+  try {
+    // Fetch male customers that are not deleted
+    const maleCustomers = await WaytrixUser.find({
+      gender: 'male',
+      deleted: { $ne: true }
+    });
+
+    // Initialize totals for each age group
+    let ageGroupTotals = {
+      "0-20": 0,
+      "20-40": 0,
+      "40+": 0
+    };
+
+    // Iterate through the customers to categorize by age and sum the totalTimesSigned
+    maleCustomers.forEach(customer => {
+      const totalTimesSigned = customer.totalTimesSigned || 0; // Default to 0 if not set
+      if (customer.age >= 0 && customer.age < 20) {
+        ageGroupTotals["0-20"] += totalTimesSigned;
+      } else if (customer.age >= 20 && customer.age < 40) {
+        ageGroupTotals["20-40"] += totalTimesSigned;
+      } else if (customer.age >= 40) {
+        ageGroupTotals["40+"] += totalTimesSigned;
+      }
+    });
+
+    // Prepare the final output in the required format
+    const result = Object.keys(ageGroupTotals).map(ageGroup => ({
+      ageGroup: ageGroup,
+      totalTimesSigned: ageGroupTotals[ageGroup]
+    }));
+
+    // Check if there are any totals available
+    if (result.every(group => group.totalTimesSigned === 0)) {
+      return res.status(404).json({ message: 'No male customers found or no totalTimesSigned data available' });
+    }
+
+    res.status(200).json(result);
+  } catch (error) {
+    console.error('Error fetching male customer totalTimesSigned:', error);
+    res.status(500).json({ message: 'Server error', error });
+  }
+};
+
+const getFemaleCustomerCountByAgeGroupTotalSigned = async (req, res) => {
+  try {
+    // Fetch female customers that are not deleted
+    const femaleCustomers = await WaytrixUser.find({
+      gender: 'female',
+      deleted: { $ne: true }
+    });
+
+    // Initialize totals for each age group
+    let ageGroupTotals = {
+      "0-20": 0,
+      "20-40": 0,
+      "40+": 0
+    };
+
+    // Iterate through the customers to categorize by age and sum the totalTimesSigned
+    femaleCustomers.forEach(customer => {
+      const totalTimesSigned = customer.totalTimesSigned || 0; // Default to 0 if not set
+      if (customer.age >= 0 && customer.age < 20) {
+        ageGroupTotals["0-20"] += totalTimesSigned;
+      } else if (customer.age >= 20 && customer.age < 40) {
+        ageGroupTotals["20-40"] += totalTimesSigned;
+      } else if (customer.age >= 40) {
+        ageGroupTotals["40+"] += totalTimesSigned;
+      }
+    });
+
+    // Prepare the final output in the required format
+    const result = Object.keys(ageGroupTotals).map(ageGroup => ({
+      ageGroup: ageGroup,
+      totalTimesSigned: ageGroupTotals[ageGroup]
+    }));
+
+    // Check if there are any totals available
+    if (result.every(group => group.totalTimesSigned === 0)) {
+      return res.status(404).json({ message: 'No female customers found or no totalTimesSigned data available' });
+    }
+
+    res.status(200).json(result);
+  } catch (error) {
+    console.error('Error fetching female customer totalTimesSigned:', error);
+    res.status(500).json({ message: 'Server error', error });
+  }
+};
 
 
 
@@ -736,16 +999,16 @@ const generateForgotKey = async (req, res) => {
   
       // Create a nodemailer transporter
       let transporter = nodemailer.createTransport({
-        service: 'Gmail',
+        service: 'yahoo',
         auth: {
-          user: 'dollarrami75@gmail.com',
-          pass: 'tdco ogya momt kdee'
+          user: 'pierreghoul@yahoo.com',
+          pass: 'nsxmtrpmakdzduar'
         }
       });
   
       // Define the email options
       let mailOptions = {
-        from: 'dollarrami75@gmail.com',
+        from: 'pierreghoul@yahoo.com',
         to: email,
         subject: 'Password Reset',
         html: `
@@ -776,44 +1039,33 @@ const generateForgotKey = async (req, res) => {
   
 
 
-
-
-const verifyUser = async (req, res) => {
-  // console.log("uewhifuheiuf")
+  const verifyUser = async (req, res) => {
     try {
-      const token = req.headers.authorization.split(' ')[1]; // Extract token from Authorization header
-      const decodedToken = jwt.verify(token, 'your_jwt_secret'); // Verify and decode token
-      const userId = decodedToken.userId; // Extract userId from decoded token
-      // console.log(req.body)
-  // console.log(userId)
-      // Find user in the database by userId
-      const user = await WaytrixUser.findOne({ _id: userId });
+      const { email, verificationKey } = req.body;
+  
+      const user = await WaytrixUser.findOne({ email });
+      console.log('User found:', user);
   
       if (!user) {
-        // console.log("user not found")
         return res.status(404).send('User not found');
       }
-      if (req.body.SmsVerification !== user.SmsVerification) {
-        // console.log("wrong verif key")
-        return res.status(400).send('Invalid verification key');
-      }
-      // Check if verification key matches
-      if (req.body.verificationKey !== user.verificationKey) {
-        // console.log("wrong verif key")
+  
+      if (verificationKey !== user.verificationKey) {
         return res.status(400).send('Invalid verification key');
       }
   
-      // Update user's verified status to true
-      user.smsVerified=true;
+      user.smsVerified = true;
       user.verified = true;
       await user.save();
   
       res.status(200).send('User verified successfully');
     } catch (error) {
-      console.error(error);
+      console.error('Verification error:', error.stack);
       res.status(500).send('Internal server error');
     }
   };
+  
+  
   
   const signupResto = async (req, res) => {
     try {
@@ -868,27 +1120,26 @@ const verifyUser = async (req, res) => {
   }
   const signup = async (req, res) => {
     try {
-      const { name, email, phone, password, role, gender } = req.body; // Include gender
-    
+      const { name, email, phone, password, role, gender, age } = req.body; // Include gender
+  
       // Check if the user already exists with the email
       const existingUserByEmail = await WaytrixUser.findOne({ email });
       if (existingUserByEmail) {
         return res.status(400).send('User already exists');
       }
-    
+  
       // Check if the user already exists with the phone number
       const existingUserByPhone = await WaytrixUser.findOne({ phone });
       if (existingUserByPhone) {
         return res.status(400).send('Phone number already exists');
       }
-    
-      // Generate a random 6-digit verification key
+  
+      // Generate a random 6-digit email verification key
       const verificationKey = Math.floor(100000 + Math.random() * 900000);
-      const SmsVerification = Math.floor(100000 + Math.random() * 900000);
-    
+  
       // Hash the password
       const hashedPassword = await bcrypt.hash(password, 10);
-    
+  
       // Create a new user
       const newUser = new WaytrixUser({
         name,
@@ -896,75 +1147,62 @@ const verifyUser = async (req, res) => {
         phone,
         password: hashedPassword,
         role,
-        gender, // Add gender to the user data
+        gender,
+        age,
         verified: role === "resto" ? true : false,
-        verificationKey, // Store the verification key in the database
-        SmsVerification,
-        smsVerified: role === "resto" ? true : false
+        verificationKey, // Store the email verification key in the database
+        SmsVerification: null,  // Keep the field, but no SMS verification
+        smsVerified: true,  // Automatically set to true
       });
-    
+  
       // Save the user to the database
       await newUser.save();
-    
+  
       // Send verification key to the user's email using NodeMailer
       const transporter = nodemailer.createTransport({
-        service: 'gmail',
+        service: 'yahoo',
         auth: {
-          user: 'dollarrami75@gmail.com',
-          pass: 'tdco ogya momt kdee',
+          user: 'pierreghoul@yahoo.com', // Replace with your email
+          pass: 'nsxmtrpmakdzduar', // Replace with your password
         },
       });
-    
+  
       const mailOptions = {
-        from: 'dollarrami75@gmail.com',
+        from: 'pierreghoul@yahoo.com',
         to: email,
         subject: 'Verification Key for Signup',
         html: `
-    <div style="background-color: #000000; color: #FFFFFF; padding: 20px; font-family: Arial, sans-serif;">
-      <h1 style="border: 1px solid #FFFFFF; padding: 10px; text-align: center;">Verification Key for Signup</h1>
-      <p style="border: 1px solid #FFFFFF; padding: 10px; text-align: center;">
-        Your verification key is: <span style="font-weight: bold;">${verificationKey}</span>
-      </p>
-      <footer style="border: 1px solid #FFFFFF; padding: 10px; text-align: center;">
-        <p>&copy; 2024 Waytrix. All rights reserved.</p>
-      </footer>
-    </div>
-  `,
+          <div style="background-color: #000000; color: #FFFFFF; padding: 20px; font-family: Arial, sans-serif;">
+            <h1 style="border: 1px solid #FFFFFF; padding: 10px; text-align: center;">Verification Key for Signup</h1>
+            <p style="border: 1px solid #FFFFFF; padding: 10px; text-align: center;">
+              Your verification key is: <span style="font-weight: bold;">${verificationKey}</span>
+            </p>
+            <footer style="border: 1px solid #FFFFFF; padding: 10px; text-align: center;">
+              <p>&copy; 2024 Waytrix. All rights reserved.</p>
+            </footer>
+          </div>
+        `,
       };
-    
-      transporter.sendMail(mailOptions, (error, info) => {
+  
+      transporter.sendMail(mailOptions, (error) => {
         if (error) {
           console.error(error);
           return res.status(500).send('Failed to send verification email');
         }
       });
-    
-      // Send SMS verification using Twilio
-      const accountSid = 'AC4944717e328b60d7e65888699b08bd63';
-      const authToken = '16d9623e7735ae0c7c8e8f5791106a89';
-      const client = require('twilio')(accountSid, authToken);
-    
-      client.messages
-        .create({
-          body: `this is your verification code for your waytrix account: ${SmsVerification}`,
-          from: '+16508604551', // Twilio number
-          to: `+${phone}` // User's phone number
-        })
-        .then(message => console.log(message.sid))
-        .catch(err => {
-          console.error('Error sending SMS:', err);
-        });
-    
-      // Generate JWT token
+  
+      // Generate JWT token (if still required)
       const token = jwt.sign({ userId: newUser._id, role: newUser.role }, 'your_jwt_secret', { expiresIn: '365d' });
-      
-      // Send response with token
+  
+      // Send response with token and user ID
       res.status(201).send({ token, _id: newUser._id });
+  
     } catch (error) {
       console.error(error);
       res.status(500).send('Internal server error');
     }
   };
+  
   
   
 
@@ -1032,4 +1270,4 @@ const verifyUser = async (req, res) => {
   };
   
 
-module.exports = { delete_resto,signup,GetWaytersByRestoId,GetTablesByRestoId,update_waiter_tableId_array, login,GetTableLocations,getRestoInfo, verifyUser, generateForgotKey,updatePassword,signupTableValet, getTableAccounts, signupWaiter, signupResto, getNumberOfWaitersByRestoId, getNumberOfTablesByRestoId, getTablesByRestoId, deleteTable, updateTable, getValetAccounts, deleteValet, updateValet, getTotalVideoLengthByRestoId, getAllVideosByRestoId, deleteVideoByTableId, updateVideoOrder, getWaitersByRestoId, deleteWaiter, updateWaiter, getTableNameByTableId, getPartnerNameByPartnerId };
+module.exports = { delete_resto,signup,GetWaytersByRestoId,GetTablesByRestoId,update_waiter_tableId_array, login,GetTableLocations,getRestoInfo, verifyUser, generateForgotKey,updatePassword,signupTableValet, getTableAccounts, signupWaiter, signupResto, getNumberOfWaitersByRestoId, getNumberOfTablesByRestoId, getTablesByRestoId, deleteTable, updateTable, getValetAccounts, deleteValet, updateValet, getTotalVideoLengthByRestoId, getAllVideosByRestoId, deleteVideoByTableId, updateVideoOrder, getWaitersByRestoId, deleteWaiter, updateWaiter, getTableNameByTableId, getPartnerNameByPartnerId, addTablet, getMaleCustomerCountByAgeGroup, getFemaleCustomerCountByAgeGroup, incrementTotalTimesSigned, getMaleCustomerCountByAgeGroupTotalSigned, getFemaleCustomerCountByAgeGroupTotalSigned };

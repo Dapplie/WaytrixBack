@@ -29,7 +29,14 @@ const UserSchema = new mongoose.Schema(
       type: String,
       required: false
     },
-   
+    age: {
+      type: Number,
+      required: false
+    },
+   totalTimesSigned: {
+    type: Number,
+    required: false
+   },
     role: {
         type: String,
         required: true
@@ -61,6 +68,9 @@ const UserSchema = new mongoose.Schema(
           },
           redeemPhone: {
             type: Number,
+          },
+          redeemEmail: {
+            type: String,
           },
           redeemKey:{
             type:Number
