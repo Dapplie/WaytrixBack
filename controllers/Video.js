@@ -126,19 +126,22 @@ const GetOneVideo = async (req, res) => {
       return res.status(404).json({ message: 'No videos found for the given tableId' });
     }
 
-    // Get the current time
-    const currentTime = new Date();
-    const currentHour = currentTime.getHours(); // Get the current hour (0-23)
+    const moment = require('moment-timezone');
+    // Get the current time in Lebanon (Asia/Beirut)
+    // const currentTime = new Date(); OLD CODE to get current time
+    const currentTime = moment.tz("Asia/Beirut");
+    //const currentHour = currenTime.getHours(); OLD CODE below
+    const currentHour = currentTime.hours(); // Get the current hour (0-23)
     console.log(currentHour);
 
     // Filter videos based on rushHour flag and the time of day
     const filteredVideos = videos.filter((video) => {
       if (video.rushHour) {
-        // Show rush hour videos only between 9 AM and 7 PM
-        return currentHour >= 9 && currentHour < 19;
+      // Show rush hour videos only between 9 AM and 11 AM and 1 PM to 3 PM
+      return (currentHour >= 9 && currentHour < 11) || (currentHour >= 13 && currentHour < 15);
       } else {
-        // Show non-rush hour videos only between 7 PM and 11 PM
-        return currentHour >= 19 && currentHour < 23;
+        // Show non-rush hour videos during all other times
+        return (currentHour < 9 || currentHour >= 11) && (currentHour < 13 || currentHour >= 15);
       }
     });
 
