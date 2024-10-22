@@ -731,6 +731,30 @@ const getFemaleCustomerCountByAgeGroupTotalSigned = async (req, res) => {
     res.status(500).json({ message: 'Server error', error });
   }
 };
+const getRestoNameById = async (req, res) => {
+    try {
+      const { userId } = req.body;
+  
+      // Validate input
+      if (!userId) {
+        return res.status(400).json({ message: 'userId is required' });
+      }
+  
+      // Find the user by ObjectId
+      const user = await WaytrixUser.findById(userId);
+  
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+  
+      // Return the name field
+      res.status(200).json({ name: user.name });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: 'Server error', error });
+    }
+  };
+  
 
 
 
@@ -913,7 +937,7 @@ const signupTableValet = async (req, res) => {
       return res.status(400).send('User already exists');
     }
   }else if (role == 'table'){
-    if (email.includes('@')) {
+    if (!email.includes('@')) {
       // console.log("includes @")
       return res.status(400).send('Invalid email format');
     }
@@ -1270,4 +1294,4 @@ const generateForgotKey = async (req, res) => {
   };
   
 
-module.exports = { delete_resto,signup,GetWaytersByRestoId,GetTablesByRestoId,update_waiter_tableId_array, login,GetTableLocations,getRestoInfo, verifyUser, generateForgotKey,updatePassword,signupTableValet, getTableAccounts, signupWaiter, signupResto, getNumberOfWaitersByRestoId, getNumberOfTablesByRestoId, getTablesByRestoId, deleteTable, updateTable, getValetAccounts, deleteValet, updateValet, getTotalVideoLengthByRestoId, getAllVideosByRestoId, deleteVideoByTableId, updateVideoOrder, getWaitersByRestoId, deleteWaiter, updateWaiter, getTableNameByTableId, getPartnerNameByPartnerId, addTablet, getMaleCustomerCountByAgeGroup, getFemaleCustomerCountByAgeGroup, incrementTotalTimesSigned, getMaleCustomerCountByAgeGroupTotalSigned, getFemaleCustomerCountByAgeGroupTotalSigned };
+module.exports = { delete_resto,signup,GetWaytersByRestoId,GetTablesByRestoId,update_waiter_tableId_array, login,GetTableLocations,getRestoInfo, verifyUser, generateForgotKey,updatePassword,signupTableValet, getTableAccounts, signupWaiter, signupResto, getNumberOfWaitersByRestoId, getNumberOfTablesByRestoId, getTablesByRestoId, deleteTable, updateTable, getValetAccounts, deleteValet, updateValet, getTotalVideoLengthByRestoId, getAllVideosByRestoId, deleteVideoByTableId, updateVideoOrder, getWaitersByRestoId, deleteWaiter, updateWaiter, getTableNameByTableId, getPartnerNameByPartnerId, addTablet, getMaleCustomerCountByAgeGroup, getFemaleCustomerCountByAgeGroup, incrementTotalTimesSigned, getMaleCustomerCountByAgeGroupTotalSigned, getFemaleCustomerCountByAgeGroupTotalSigned, getRestoNameById };

@@ -1,5 +1,5 @@
 const express = require('express');
-const {signup, login, verifyUser, generateForgotKey, updatePassword, signupTableValet, getTableAccounts, signupWaiter, GetTableLocations, getRestoInfo, GetWaytersByRestoId, GetTablesByRestoId, update_waiter_tableId_array, signupResto, delete_resto, getNumberOfWaitersByRestoId, getNumberOfTablesByRestoId, getTablesByRestoId, deleteTable, updateTable, getValetAccounts, deleteValet, updateValet, getTotalVideoLengthByRestoId, getAllVideosByRestoId, deleteVideoByTableId, updateVideoOrder, getWaitersByRestoId, deleteWaiter, updateWaiter, getTableNameByTableId, getPartnerNameByPartnerId, addTablet, getMaleCustomerCountByAgeGroup, getFemaleCustomerCountByAgeGroup, incrementTotalTimesSigned, getMaleCustomerCountByAgeGroupTotalSigned, getFemaleCustomerCountByAgeGroupTotalSigned} = require('../controllers/Auth');
+const {signup, login, verifyUser, generateForgotKey, updatePassword, signupTableValet, getTableAccounts, signupWaiter, GetTableLocations, getRestoInfo, GetWaytersByRestoId, GetTablesByRestoId, update_waiter_tableId_array, signupResto, delete_resto, getNumberOfWaitersByRestoId, getNumberOfTablesByRestoId, getTablesByRestoId, deleteTable, updateTable, getValetAccounts, deleteValet, updateValet, getTotalVideoLengthByRestoId, getAllVideosByRestoId, deleteVideoByTableId, updateVideoOrder, getWaitersByRestoId, deleteWaiter, updateWaiter, getTableNameByTableId, getPartnerNameByPartnerId, addTablet, getMaleCustomerCountByAgeGroup, getFemaleCustomerCountByAgeGroup, incrementTotalTimesSigned, getMaleCustomerCountByAgeGroupTotalSigned, getFemaleCustomerCountByAgeGroupTotalSigned, getRestoNameById} = require('../controllers/Auth');
 const { RestoAuth, WaytrixAuth } = require('../middleware/Auth');
 const { partner_login } = require('../controllers/PartnerAccount');
 
@@ -54,4 +54,5 @@ Router.post('/getFemaleCustomerCountByAgeGroup', getFemaleCustomerCountByAgeGrou
 Router.post('/incrementTotalTimesSigned', incrementTotalTimesSigned);
 Router.post('/getMaleCustomerCountByAgeGroupTotalSigned', getMaleCustomerCountByAgeGroupTotalSigned);
 Router.post('/getFemaleCustomerCountByAgeGroupTotalSigned', getFemaleCustomerCountByAgeGroupTotalSigned);
+Router.post('/getRestoNameById', getRestoNameById);
 module.exports = Router;

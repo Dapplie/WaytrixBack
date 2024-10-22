@@ -424,6 +424,7 @@ const ContactUs = async (req, res) => {
 
         const { restoId } = user;
 
+        // Save the new contact message
         const newContact = new WaytrixContactUs({
             Name,
             Phone,
@@ -432,10 +433,51 @@ const ContactUs = async (req, res) => {
         });
 
         await newContact.save();
-        res.status(201).json({ message: 'Contact information saved successfully.' });
+
+        // Retrieve the restaurant email using restoId
+        const restoUser = await WaytrixUser.findOne({ _id: restoId });
+
+        if (!restoUser) {
+            return res.status(404).json({ message: 'Restaurant not found.' });
+        }
+
+        const restaurantEmail = restoUser.email; // Get the restaurant's email
+
+        // Send email notification to the restaurant's email
+        const transporter = nodemailer.createTransport({
+            service: 'yahoo',
+            auth: {
+                user: 'pierreghoul@yahoo.com',  // Replace with your email
+                pass: 'nsxmtrpmakdzduar'        // Replace with your email password
+            }
+        });
+
+        const mailOptions = {
+            from: 'pierreghoul@yahoo.com',
+            to: restaurantEmail,  // Send to the restaurant's email
+            subject: 'New Contact Us Submission',
+            html: `
+            <h3>New Contact Us Submission</h3>
+            <p><strong>Name:</strong> ${Name}</p>
+            <p><strong>Phone:</strong> ${Phone}</p>
+            <p><strong>Message:</strong> ${Text}</p>
+            <p><strong>Restaurant ID:</strong> ${restoId}</p>
+            `
+        };
+
+        transporter.sendMail(mailOptions, (error, info) => {
+            if (error) {
+                console.error('Email error:', error);
+                return res.status(500).json({ message: 'Error sending email.' });
+            } else {
+                console.log('Email sent:', info.response);
+            }
+        });
+
+        res.status(201).json({ message: 'Contact information saved and email sent successfully.' });
     } catch (error) {
         res.status(500).json({ message: 'Error saving contact information.', error });
     }
-}
+};
 
 module.exports = {ContactUs,GetContactUs,UserRedeemInfo,AddPartner,GetAllPartners,Redeem,AddPoints,GetAllVouchers, DeletePartner, AddSurvey, GetAllSurveys, getTotalPoints, AddVoucher}

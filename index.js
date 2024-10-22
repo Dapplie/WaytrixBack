@@ -14,7 +14,7 @@ const PartnerAccountRoutes = require('./routes/PartnerAccount');
 require('./db');
 const os = require('os');
 
-const PORT = process.env.PORT || 3030;
+const PORT = process.env.PORT || 4000;  //was 3030
 
 const app = express();
 
