@@ -41,6 +41,10 @@ const UserSchema = new mongoose.Schema(
         type: String,
         required: true
       },
+      date: {
+        type: Date,
+        default: Date.now // Automatically fills with the current date
+      },
     verified:{
         type:Boolean,
         required:true

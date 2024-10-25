@@ -11,7 +11,10 @@ const CarSchema = new mongoose.Schema(
       type:String,
       required:true
     },
-    
+    date: {
+      type: Date,
+      default: Date.now // Automatically fills with the current date
+    },
   restoId:{
     type:String,
     required:true
