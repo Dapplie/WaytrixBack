@@ -8,6 +8,7 @@ const WaytrixVideo = require('../models/Video');
 const WaytrixPartners = require('../models/Partners'); 
 const WaytrixCars = require('../models/AddCarsValet')
 const ContactUs = require('../models/ContactUs')
+const WaytrixSurvey = require('../models/Survey')
 
 
 const delete_resto = async (req, res) => {
@@ -259,12 +260,12 @@ const getTotalVideoLengthByRestoId = async (req, res) => {
       return res.status(400).json({ message: 'restoId is required' });
     }
 
-    // Calculate the total duration of all videos for the given restoId
+    // Calculate the total duration of all unique videoURLs for the given restoId
     const totalDuration = await WaytrixVideo.aggregate([
-      { $match: { restoId: restoId } },  // Ensure restoId is the correct field name
-      { $group: { _id: null, totalDuration: { $sum: "$duration" } } }  // Ensure duration is a number
+      { $match: { restoId: restoId } },  // Filter by restoId
+      { $group: { _id: "$videoURL", duration: { $first: "$duration" } } }, // Group by unique videoURL
+      { $group: { _id: null, totalDuration: { $sum: "$duration" } } } // Sum durations of unique videoURLs
     ]);
-    
 
     if (!totalDuration.length) {
       return res.status(404).json({ message: 'No videos found for the provided restoId' });
@@ -272,8 +273,8 @@ const getTotalVideoLengthByRestoId = async (req, res) => {
 
     res.status(200).json({ totalDuration: totalDuration[0].totalDuration });
   } catch (error) {
-    console.error('Error:', error.message);  // Log the error message
-    console.error('Stack Trace:', error.stack);  // Log the stack trace
+    console.error('Error:', error.message);
+    console.error('Stack Trace:', error.stack);
     res.status(500).json({ message: 'Server error', error: error.message || error });
   }
 };
@@ -1050,12 +1051,293 @@ const getRestoNameById = async (req, res) => {
   };
 
 
+  const getMonthlyTableCount2 = async (req, res) => {
+    try {
+      const { restoId } = req.body; // Get restoId from the request body
+  
+      // Use aggregation to group by month and count the number of users for the given restoId
+      const result = await WaytrixUser.aggregate([
+        {
+          $match: {
+            role: 'table', // Filter for users with role 'table'
+            deleted: { $ne: true }, // Exclude deleted users
+            restoId: restoId // Filter by requested restoId
+          }
+        },
+        {
+          $group: {
+            _id: { $month: "$date" }, // Group by month of the date field
+            count: { $sum: 1 } // Count the number of documents
+          }
+        },
+        {
+          $project: {
+            month: "$_id", // Project the month
+            count: 1, // Include the count
+            _id: 0 // Exclude the default _id
+          }
+        },
+        {
+          $sort: { month: 1 } // Sort by month
+        }
+      ]);
+  
+      // Create an array with the month names and fill it with counts
+      const monthNames = [
+        'January', 'February', 'March', 'April', 'May', 'June',
+        'July', 'August', 'September', 'October', 'November', 'December'
+      ];
+      const monthlyCounts = monthNames.map((month, index) => {
+        const found = result.find(r => r.month === index + 1);
+        return {
+          month,
+          count: found ? found.count : 0 // Use found count or 0 if not found
+        };
+      });
+  
+      res.status(200).json(monthlyCounts); // Send the monthly counts as response
+    } catch (error) {
+      console.error('Error fetching monthly table counts:', error);
+      res.status(500).json({ message: 'Server error', error });
+    }
+  };
+  
 
 
+  const getMonthlySurveyCount2 = async (req, res) => {
+    try {
+      const { restoId } = req.body; // Get restoId from the request body
+  
+      // Use aggregation to group by month and count the number of users for the given restoId
+      const result = await WaytrixSurvey.aggregate([
+        {
+          $match: {
+            //role: 'table', // Filter for users with role 'table'
+            deleted: { $ne: true }, // Exclude deleted users
+            restoId: restoId // Filter by requested restoId
+          }
+        },
+        {
+          $group: {
+            _id: { $month: "$date" }, // Group by month of the date field
+            count: { $sum: 1 } // Count the number of documents
+          }
+        },
+        {
+          $project: {
+            month: "$_id", // Project the month
+            count: 1, // Include the count
+            _id: 0 // Exclude the default _id
+          }
+        },
+        {
+          $sort: { month: 1 } // Sort by month
+        }
+      ]);
+  
+      // Create an array with the month names and fill it with counts
+      const monthNames = [
+        'January', 'February', 'March', 'April', 'May', 'June',
+        'July', 'August', 'September', 'October', 'November', 'December'
+      ];
+      const monthlyCounts = monthNames.map((month, index) => {
+        const found = result.find(r => r.month === index + 1);
+        return {
+          month,
+          count: found ? found.count : 0 // Use found count or 0 if not found
+        };
+      });
+  
+      res.status(200).json(monthlyCounts); // Send the monthly counts as response
+    } catch (error) {
+      console.error('Error fetching monthly table counts:', error);
+      res.status(500).json({ message: 'Server error', error });
+    }
+  };
+  
+
+  const getMonthlyCarCount2 = async (req, res) => {
+    try {
+      const { restoId } = req.body; // Get restoId from the request body
+
+      // Use aggregation to group by month and count the number of cars
+      const result = await WaytrixCars.aggregate([
+        {
+          $match: {
+            deleted: { $ne: true }, // Exclude deleted cars (you need to add a deleted field in your Car schema if applicable)
+            restoId: restoId // Filter by requested restoId
+          }
+        },
+        {
+          $group: {
+            _id: { $month: "$date" }, // Group by month of the date field
+            count: { $sum: 1 } // Count the number of cars
+          }
+        },
+        {
+          $project: {
+            month: "$_id", // Project the month
+            count: 1, // Include the count
+            _id: 0 // Exclude the default _id
+          }
+        },
+        {
+          $sort: { month: 1 } // Sort by month
+        }
+      ]);
+  
+      // Create an array with the month names and fill it with counts
+      const monthNames = [
+        'January', 'February', 'March', 'April', 'May', 'June',
+        'July', 'August', 'September', 'October', 'November', 'December'
+      ];
+      const monthlyCounts = monthNames.map((month, index) => {
+        const found = result.find(r => r.month === index + 1);
+        return {
+          month,
+          count: found ? found.count : 0 // Use found count or 0 if not found
+        };
+      });
+  
+      res.status(200).json(monthlyCounts); // Send the monthly counts as response
+    } catch (error) {
+      console.error('Error fetching monthly car counts:', error);
+      res.status(500).json({ message: 'Server error', error });
+    }
+  };
+  
+
+  const getMonthlyWaiterCount2 = async (req, res) => {
+    try {
+      const { restoId } = req.body; // Get restoId from the request body
+  
+      // Use aggregation to group by month and count the number of users for the given restoId
+      const result = await WaytrixUser.aggregate([
+        {
+          $match: {
+            role: 'waiter', // Filter for users with role 'waiter'
+            deleted: { $ne: true }, // Exclude deleted users
+            restoId: restoId // Filter by requested restoId
+          }
+        },
+        {
+          $group: {
+            _id: { $month: "$date" }, // Group by month of the date field
+            count: { $sum: 1 } // Count the number of documents
+          }
+        },
+        {
+          $project: {
+            month: "$_id", // Project the month
+            count: 1, // Include the count
+            _id: 0 // Exclude the default _id
+          }
+        },
+        {
+          $sort: { month: 1 } // Sort by month
+        }
+      ]);
+  
+      // Create an array with the month names and fill it with counts
+      const monthNames = [
+        'January', 'February', 'March', 'April', 'May', 'June',
+        'July', 'August', 'September', 'October', 'November', 'December'
+      ];
+      const monthlyCounts = monthNames.map((month, index) => {
+        const found = result.find(r => r.month === index + 1);
+        return {
+          month,
+          count: found ? found.count : 0 // Use found count or 0 if not found
+        };
+      });
+  
+      res.status(200).json(monthlyCounts); // Send the monthly counts as response
+    } catch (error) {
+      console.error('Error fetching monthly table counts:', error);
+      res.status(500).json({ message: 'Server error', error });
+    }
+  };
 
 
+  const getMonthlyValetCount2 = async (req, res) => {
+    try {
+      const { restoId } = req.body; // Get restoId from the request body
+  
+      // Use aggregation to group by month and count the number of users for the given restoId
+      const result = await WaytrixUser.aggregate([
+        {
+          $match: {
+            role: 'valet', // Filter for users with role 'valet'
+            deleted: { $ne: true }, // Exclude deleted users
+            restoId: restoId // Filter by requested restoId
+          }
+        },
+        {
+          $group: {
+            _id: { $month: "$date" }, // Group by month of the date field
+            count: { $sum: 1 } // Count the number of documents
+          }
+        },
+        {
+          $project: {
+            month: "$_id", // Project the month
+            count: 1, // Include the count
+            _id: 0 // Exclude the default _id
+          }
+        },
+        {
+          $sort: { month: 1 } // Sort by month
+        }
+      ]);
+  
+      // Create an array with the month names and fill it with counts
+      const monthNames = [
+        'January', 'February', 'March', 'April', 'May', 'June',
+        'July', 'August', 'September', 'October', 'November', 'December'
+      ];
+      const monthlyCounts = monthNames.map((month, index) => {
+        const found = result.find(r => r.month === index + 1);
+        return {
+          month,
+          count: found ? found.count : 0 // Use found count or 0 if not found
+        };
+      });
+  
+      res.status(200).json(monthlyCounts); // Send the monthly counts as response
+    } catch (error) {
+      console.error('Error fetching monthly table counts:', error);
+      res.status(500).json({ message: 'Server error', error });
+    }
+  };
 
 
+  const getTotalRushVideoLengthByRestoId = async (req, res) => {
+    try {
+      const { restoId } = req.body;
+
+      if (!restoId) {
+        return res.status(400).json({ message: 'restoId is required' });
+      }
+  
+      const totalDuration = await WaytrixVideo.aggregate([
+        { $match: { restoId: restoId, rushHour: true } }, // Match on restoId and rushHour
+        { $group: { _id: "$videoURL", duration: { $first: "$duration" } } }, // Group by unique videoURL
+        { $group: { _id: null, totalDuration: { $sum: "$duration" } } } // Sum durations of unique videoURLs
+      ]);
+
+      if (!totalDuration.length) {
+        return res.status(404).json({ message: 'No videos found for the provided restoId with rushHour true' });
+      }
+
+      res.status(200).json({ totalDuration: totalDuration[0].totalDuration });
+    } catch (error) {
+      console.error('Error:', error.message);
+      console.error('Stack Trace:', error.stack);
+      res.status(500).json({ message: 'Server error', error: error.message || error });
+    }
+  };
+  
+  
 
 
 
@@ -1584,4 +1866,4 @@ const generateForgotKey = async (req, res) => {
   };
   
 
-module.exports = { delete_resto,signup,GetWaytersByRestoId,GetTablesByRestoId,update_waiter_tableId_array, login,GetTableLocations,getRestoInfo, verifyUser, generateForgotKey,updatePassword,signupTableValet, getTableAccounts, signupWaiter, signupResto, getNumberOfWaitersByRestoId, getNumberOfTablesByRestoId, getTablesByRestoId, deleteTable, updateTable, getValetAccounts, deleteValet, updateValet, getTotalVideoLengthByRestoId, getAllVideosByRestoId, deleteVideoByTableId, updateVideoOrder, getWaitersByRestoId, deleteWaiter, updateWaiter, getTableNameByTableId, getPartnerNameByPartnerId, addTablet, getMaleCustomerCountByAgeGroup, getFemaleCustomerCountByAgeGroup, incrementTotalTimesSigned, getMaleCustomerCountByAgeGroupTotalSigned, getFemaleCustomerCountByAgeGroupTotalSigned, getRestoNameById, getMonthlyRestoCount, getMonthlyTableCount, getMonthlyWaiterCount, getMonthlyValetCount, getMonthlyCarCount, getMonthlyContactUsCount };
+module.exports = { delete_resto,signup,GetWaytersByRestoId,GetTablesByRestoId,update_waiter_tableId_array, login,GetTableLocations,getRestoInfo, verifyUser, generateForgotKey,updatePassword,signupTableValet, getTableAccounts, signupWaiter, signupResto, getNumberOfWaitersByRestoId, getNumberOfTablesByRestoId, getTablesByRestoId, deleteTable, updateTable, getValetAccounts, deleteValet, updateValet, getTotalVideoLengthByRestoId, getAllVideosByRestoId, deleteVideoByTableId, updateVideoOrder, getWaitersByRestoId, deleteWaiter, updateWaiter, getTableNameByTableId, getPartnerNameByPartnerId, addTablet, getMaleCustomerCountByAgeGroup, getFemaleCustomerCountByAgeGroup, incrementTotalTimesSigned, getMaleCustomerCountByAgeGroupTotalSigned, getFemaleCustomerCountByAgeGroupTotalSigned, getRestoNameById, getMonthlyRestoCount, getMonthlyTableCount, getMonthlyWaiterCount, getMonthlyValetCount, getMonthlyCarCount, getMonthlyContactUsCount, getMonthlyTableCount2, getMonthlySurveyCount2, getMonthlyCarCount2, getMonthlyWaiterCount2, getMonthlyValetCount2, getTotalRushVideoLengthByRestoId };

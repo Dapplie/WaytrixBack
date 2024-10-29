@@ -1,5 +1,5 @@
 const express = require('express');
-const {signup, login, verifyUser, generateForgotKey, updatePassword, signupTableValet, getTableAccounts, signupWaiter, GetTableLocations, getRestoInfo, GetWaytersByRestoId, GetTablesByRestoId, update_waiter_tableId_array, signupResto, delete_resto, getNumberOfWaitersByRestoId, getNumberOfTablesByRestoId, getTablesByRestoId, deleteTable, updateTable, getValetAccounts, deleteValet, updateValet, getTotalVideoLengthByRestoId, getAllVideosByRestoId, deleteVideoByTableId, updateVideoOrder, getWaitersByRestoId, deleteWaiter, updateWaiter, getTableNameByTableId, getPartnerNameByPartnerId, addTablet, getMaleCustomerCountByAgeGroup, getFemaleCustomerCountByAgeGroup, incrementTotalTimesSigned, getMaleCustomerCountByAgeGroupTotalSigned, getFemaleCustomerCountByAgeGroupTotalSigned, getRestoNameById, getMonthlyRestoCount, getMonthlyTableCount, getMonthlyWaiterCount, getMonthlyValetCount, getMonthlyCarCount, getMonthlyContactUsCount} = require('../controllers/Auth');
+const {signup, login, verifyUser, generateForgotKey, updatePassword, signupTableValet, getTableAccounts, signupWaiter, GetTableLocations, getRestoInfo, GetWaytersByRestoId, GetTablesByRestoId, update_waiter_tableId_array, signupResto, delete_resto, getNumberOfWaitersByRestoId, getNumberOfTablesByRestoId, getTablesByRestoId, deleteTable, updateTable, getValetAccounts, deleteValet, updateValet, getTotalVideoLengthByRestoId, getAllVideosByRestoId, deleteVideoByTableId, updateVideoOrder, getWaitersByRestoId, deleteWaiter, updateWaiter, getTableNameByTableId, getPartnerNameByPartnerId, addTablet, getMaleCustomerCountByAgeGroup, getFemaleCustomerCountByAgeGroup, incrementTotalTimesSigned, getMaleCustomerCountByAgeGroupTotalSigned, getFemaleCustomerCountByAgeGroupTotalSigned, getRestoNameById, getMonthlyRestoCount, getMonthlyTableCount, getMonthlyWaiterCount, getMonthlyValetCount, getMonthlyCarCount, getMonthlyContactUsCount, getMonthlyTableCount2, getMonthlySurveyCount2, getMonthlyCarCount2, getMonthlyWaiterCount2, getMonthlyValetCount2, getTotalRushVideoLengthByRestoId} = require('../controllers/Auth');
 const { RestoAuth, WaytrixAuth } = require('../middleware/Auth');
 const { partner_login } = require('../controllers/PartnerAccount');
 
@@ -62,4 +62,10 @@ Router.get('/getMonthlyWaiterCount', getMonthlyWaiterCount);
 Router.get('/getMonthlyValetCount', getMonthlyValetCount);
 Router.get('/getMonthlyCarCount', getMonthlyCarCount);
 Router.get('/getMonthlyContactUsCount', getMonthlyContactUsCount);
+Router.post('/getMonthlyTableCount2', getMonthlyTableCount2);
+Router.post('/getMonthlySurveyCount2', getMonthlySurveyCount2);
+Router.post('/getMonthlyCarCount2', getMonthlyCarCount2);
+Router.post('/getMonthlyWaiterCount2', getMonthlyWaiterCount2);
+Router.post('/getMonthlyValetCount2', getMonthlyValetCount2);
+Router.post('/getTotalRushVideoLengthByRestoId', getTotalRushVideoLengthByRestoId);
 module.exports = Router;
