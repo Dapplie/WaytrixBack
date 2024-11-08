@@ -449,9 +449,9 @@ const getPartnerNameByPartnerId = async (req, res) => {
   try {
     const { partnerId } = req.body;
 
-    // Ensure partnerId is provided
+    // Check if partnerId is provided and not empty
     if (!partnerId) {
-      return res.status(400).json({ message: 'partnerId is required' });
+      return res.status(200).json({ partnerName: 'No partner' });
     }
 
     // Find the partner with the provided partnerId

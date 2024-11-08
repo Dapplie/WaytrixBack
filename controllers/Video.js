@@ -197,17 +197,24 @@ const AddVideo = async (req, res) => {
 
     // Create a new record for each tableId found
     for (const table of tables) {
-      const newVideo = new WaytrixVideo({
+      // Construct new video object with only defined fields
+      const newVideoData = {
         videoURL,
         restoId,
         tableId: table._id,
         order: newOrder, // Use the incremented order
         forLoopId,
-        partnerId,
         uploadDate,
         duration, // Save the duration
         rushHour // Use the provided rushHour value or default to false
-      });
+      };
+
+      // Add partnerId only if it is provided
+      if (partnerId) {
+        newVideoData.partnerId = partnerId;
+      }
+
+      const newVideo = new WaytrixVideo(newVideoData);
       await newVideo.save();
     }
 

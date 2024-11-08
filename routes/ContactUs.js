@@ -1,5 +1,5 @@
 const express = require('express');
-const { ContactUs, GetContactUs, AddPartner, GetAllPartners, DeletePartner, AddSurvey, GetAllSurveys, AddPoints, getTotalPoints, AddVoucher, GetAllVouchers, Redeem, UserRedeemInfo } = require('../controllers/ContactUs');
+const { ContactUs, GetContactUs, AddPartner, GetAllPartners, DeletePartner, AddSurvey, GetAllSurveys, AddPoints, getTotalPoints, AddVoucher, GetAllVouchers, Redeem, UserRedeemInfo, getCustomerSpinDate } = require('../controllers/ContactUs');
 const { RestoAuth, WaytrixAuth, TableAuth, TableAndCustomerAuth, CustomerAuth, AnyAuth } = require('../middleware/Auth');
 
 const ContactUsRouter = express.Router();
@@ -19,6 +19,7 @@ ContactUsRouter.post('/AddVoucher',WaytrixAuth, AddVoucher);
 ContactUsRouter.post('/GetAllVouchers',CustomerAuth, GetAllVouchers);
 ContactUsRouter.post('/Redeem', CustomerAuth, Redeem);
 ContactUsRouter.post('/UserRedeemInfo',CustomerAuth, UserRedeemInfo);
+ContactUsRouter.post('/getCustomerSpinDate',CustomerAuth, getCustomerSpinDate);
 
 
 module.exports = ContactUsRouter;

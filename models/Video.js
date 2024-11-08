@@ -28,7 +28,7 @@ required:true
       },
       partnerId:{
         type:String,
-        required:true
+        required:false
       },
       uploadDate:{
         type:String,

@@ -228,6 +228,46 @@ const Redeem = async (req, res) => {
 
 
 
+const getCustomerSpinDate = async (req, res) => {
+    const { customerId } = req.body;
+
+    // Check if customerId is provided
+    if (!customerId) {
+        return res.status(400).json({ error: 'customerId is required' });
+    }
+
+    try {
+        // Fetch customer's name from WaytrixUser model
+        const user = await WaytrixUser.findById(customerId).select('name');
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        // Fetch lastTimeSpinned from WaytrixGame model
+        const pointsData = await WaytrixGame.findOne({ customerId }).select('lastTimeSpinned');
+        if (!pointsData) {
+            return res.status(404).json({ error: 'Points data not found for this user' });
+        }
+
+        // Check if lastTimeSpinned is at least 24 hours old
+        const currentTime = new Date();
+        const lastSpinnedTime = new Date(pointsData.lastTimeSpinned);
+        const hoursDifference = (currentTime - lastSpinnedTime) / (1000 * 60 * 60);
+
+        res.status(200).json({
+            name: user.name,
+            lastTimeSpinned: hoursDifference >= 24 ? "1" : "0"
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'An error occurred while fetching data' });
+    }
+};
+
+
+
+
+
 const GetAllVouchers = async (req, res) => {
     console.log(req.body)
     try {
@@ -480,4 +520,4 @@ const ContactUs = async (req, res) => {
     }
 };
 
-module.exports = {ContactUs,GetContactUs,UserRedeemInfo,AddPartner,GetAllPartners,Redeem,AddPoints,GetAllVouchers, DeletePartner, AddSurvey, GetAllSurveys, getTotalPoints, AddVoucher}
+module.exports = {ContactUs,GetContactUs,UserRedeemInfo,AddPartner,GetAllPartners,Redeem,AddPoints,GetAllVouchers, DeletePartner, AddSurvey, GetAllSurveys, getTotalPoints, AddVoucher, getCustomerSpinDate}
