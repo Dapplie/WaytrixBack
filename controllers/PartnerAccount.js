@@ -184,6 +184,39 @@ console.log(req.body)
     }
 }
 
+const edit_partner = async (req, res) => {
+    try {
+      const { partnerId, name, phone, description, restoIdArray } = req.body;
+  
+      // Check if partnerId is provided
+      if (!partnerId) {
+        return res.status(400).json({ message: 'Partner ID is required.' });
+      }
+  
+      // Update the partner's details
+      const updatedPartner = await WaytrixPartners.findByIdAndUpdate(
+        partnerId,
+        {
+          ...(name && { name }), // Update only if provided
+          ...(phone && { phone }),
+          ...(description && { description }),
+          ...(restoIdArray && { restoIdArray }),
+        },
+        { new: true } // Return the updated document
+      );
+  
+      // If the partner was not found
+      if (!updatedPartner) {
+        return res.status(404).json({ message: 'Partner not found.' });
+      }
+  
+      res.status(200).json({ message: 'Partner updated successfully.', updatedPartner });
+    } catch (error) {
+      console.error('Error updating partner:', error);
+      res.status(500).json({ message: 'Internal Server Error', error });
+    }
+  };
+  
 
 
-module.exports = {partner_login,num_of_vouchers_collected_resto_specific, partner_get_resto_account,num_of_videos_in_each_resto_per_day, get_total_video_num, get_partners, get_all_restaurants_for_a_specific_partner}
+module.exports = {partner_login,num_of_vouchers_collected_resto_specific, partner_get_resto_account,num_of_videos_in_each_resto_per_day, get_total_video_num, get_partners, get_all_restaurants_for_a_specific_partner, edit_partner}

@@ -19,6 +19,10 @@ const CarSchema = new mongoose.Schema(
     type:String,
     required:true
   },
+  tableId:{
+    type:String,
+    required:true
+  },
    ticketNum:{
     type:String,
     required:true
@@ -30,6 +34,10 @@ const CarSchema = new mongoose.Schema(
     customerId:{
       type:String,
       required:true
+    },
+    activated: {
+      type: Boolean,
+      default: false, // Automatically set to false on creation
     },
     minutes:{
       type:Number

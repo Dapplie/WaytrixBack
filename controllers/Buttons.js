@@ -282,7 +282,7 @@ const requestCar = async (req, res) => {
 const AddCar = async (req, res) => {
     // DELETED valetId,
     // ticketNum, restoId, carName,  color
-    const { ticketNum, restoId, carName, color } = req.body;
+    const { ticketNum, restoId, tableId, carName, color } = req.body;
     console.log(req.body);
 
     try {
@@ -296,6 +296,7 @@ const AddCar = async (req, res) => {
         const newCar = new WaytrixCar({
             requested: false,
             restoId,
+            tableId,
             ticketNum,
             carName,
             color,
@@ -311,6 +312,48 @@ const AddCar = async (req, res) => {
         res.status(500).json({ error: 'Failed to add car' });
     }
 }
+
+
+const checkAndActivateCar = async (req, res) => {
+    const { ticketNum } = req.body;
+  
+    if (!ticketNum) {
+      return res.status(400).json({ error: 'ticketNum is required' });
+    }
+  
+    try {
+      // Find the car with the given ticketNum
+      const car = await WaytrixCar.findOne({ ticketNum });
+  
+      if (!car) {
+        return res.status(404).json({ error: 'No car found with the provided ticketNum' });
+      }
+  
+      // Check if required fields exist and meet the conditions
+      if (
+        car.timer === undefined || // Ensure `timer` exists
+        car.activated === undefined || // Ensure `activated` exists
+        car.timeNum === undefined || // Ensure `timeNum` exists
+        !car.timer || // Ensure `timer` is true
+        car.activated || // Ensure `activated` is false
+        car.timeNum <= 0 // Ensure `timeNum` > 0
+      ) {
+        // Return 0 if any condition fails
+        return res.status(200).json({ timeNum: 0 });
+      }
+  
+      // Update the activated field to true
+      car.activated = true;
+      await car.save();
+  
+      // Return timeNum
+      return res.status(200).json({ timeNum: car.timeNum });
+    } catch (error) {
+      console.error('Error checking and activating car:', error);
+      return res.status(500).json({ error: 'Internal server error' });
+    }
+  };
+
 const SearchMenuByTableId = async (req, res) => {
     try {
         const { tableId } = req.body;
@@ -442,4 +485,4 @@ const AddBooleanButtons = async (req, res) => {
     }
 }
 
-module.exports = {AddBooleanButtons,get_count_down_valet,set_count_down_valet,get_resto_id_from_table_id,get_resto_id_from_valet_id, getButtonsByTableId,deleteCustomButton, getRestoSpecificCustomButtons, getCustomButtonsByTableId, AddCustomButtons, AddMenu,AddOrder,DeleteOrders,GetOrdersByWaiterId, SearchMenuByTableId,deleteCar, AddCar, requestCar, GetRequestedCars}
+module.exports = {AddBooleanButtons,get_count_down_valet,set_count_down_valet,get_resto_id_from_table_id,get_resto_id_from_valet_id, getButtonsByTableId,deleteCustomButton, getRestoSpecificCustomButtons, getCustomButtonsByTableId, AddCustomButtons, AddMenu,AddOrder,DeleteOrders,GetOrdersByWaiterId, SearchMenuByTableId,deleteCar, AddCar, requestCar, GetRequestedCars, checkAndActivateCar}

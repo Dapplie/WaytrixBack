@@ -268,7 +268,7 @@ const getTotalVideoLengthByRestoId = async (req, res) => {
     ]);
 
     if (!totalDuration.length) {
-      return res.status(404).json({ message: 'No videos found for the provided restoId' });
+      return res.status(200).json({ totalDuration: 0 });
     }
 
     res.status(200).json({ totalDuration: totalDuration[0].totalDuration });
@@ -1325,10 +1325,12 @@ const getRestoNameById = async (req, res) => {
         { $group: { _id: null, totalDuration: { $sum: "$duration" } } } // Sum durations of unique videoURLs
       ]);
 
+      // If no videos are found, return totalDuration as 0
       if (!totalDuration.length) {
-        return res.status(404).json({ message: 'No videos found for the provided restoId with rushHour true' });
+        return res.status(200).json({ totalDuration: 0 });
       }
 
+      // Return the calculated total duration
       res.status(200).json({ totalDuration: totalDuration[0].totalDuration });
     } catch (error) {
       console.error('Error:', error.message);
@@ -1716,7 +1718,7 @@ const generateForgotKey = async (req, res) => {
   }
   const signup = async (req, res) => {
     try {
-      const { name, email, phone, password, role, gender, age } = req.body; // Include gender
+      const { name, lastName, email, phone, password, role, gender, age } = req.body; // Include gender
   
       // Check if the user already exists with the email
       const existingUserByEmail = await WaytrixUser.findOne({ email });
@@ -1739,6 +1741,7 @@ const generateForgotKey = async (req, res) => {
       // Create a new user
       const newUser = new WaytrixUser({
         name,
+        lastName,
         email,
         phone,
         password: hashedPassword,

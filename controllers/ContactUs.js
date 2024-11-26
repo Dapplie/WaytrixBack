@@ -58,11 +58,9 @@ const AddPoints = async (req, res) => {
     }
 }
 const UserRedeemInfo = async (req, res) => {
-    const { customerId, redeemName, redeemEmail } = req.body; // Update to redeemEmail
-    console.log(req.body);
-    
+    const { customerId, redeemName } = req.body;
+
     try {
-        // Ensure ObjectId is imported
         const { ObjectId } = require('mongodb');
 
         // Find the user by customerId
@@ -72,30 +70,32 @@ const UserRedeemInfo = async (req, res) => {
             return res.status(404).json({ message: 'User not found' });
         }
 
-        // Generate a 6-digit redeem key
+        // Automatically use the customer's email
+        const redeemEmail = user.email;
+
+        // Generate a 6-digit redeem key (optional, for internal use only)
         const redeemKey = Math.floor(100000 + Math.random() * 900000).toString();
 
-        // Update or add redeem information
+        // Update redeem information
         user.redeemName = redeemName;
-        user.redeemEmail = redeemEmail; // Store email
-        user.redeemKey = redeemKey;
+        user.redeemKey = redeemKey; // Optional field
 
         await user.save();
 
-        // Send email with redeemKey using Nodemailer
+        // Send email with confirmation (if needed, customize text)
         const transporter = nodemailer.createTransport({
             service: 'yahoo',
             auth: {
-                user: 'pierreghoul@yahoo.com', // Your email
-                pass: 'nsxmtrpmakdzduar' // Your email password
+                user: 'pierreghoul@yahoo.com',
+                pass: 'nsxmtrpmakdzduar'
             }
         });
 
         const mailOptions = {
             from: 'pierreghoul@yahoo.com',
-            to: redeemEmail, // Use redeemEmail from request
-            subject: 'Your Redeem Key',
-            text: `Your redeem key is ${redeemKey}, please save it for later use`
+            to: redeemEmail,
+            subject: 'Redemption Successful',
+            text: `Hello ${user.name}, you can now redeem vouchers using your Waytrix account.`
         };
 
         transporter.sendMail(mailOptions, (error, info) => {
@@ -113,10 +113,9 @@ const UserRedeemInfo = async (req, res) => {
     }
 };
 
-// beloww
 const Redeem = async (req, res) => {
-    const { _id, customerId, redeemKey, restoId } = req.body;
-    console.log(req.body);
+    const { _id, customerId, restoId } = req.body;
+
     try {
         // Search for the voucher
         const voucher = await WaytrixVouchers.findOne({ _id, active: true });
@@ -124,58 +123,40 @@ const Redeem = async (req, res) => {
             return res.status(404).json({ message: 'Voucher not found or not active' });
         }
 
-        // Log voucher email
-        console.log('Voucher Email:', voucher.email);
-
-        // Search for the customer's points
+        // Fetch customer and user details
         const customer = await WaytrixGame.findOne({ customerId });
-        if (!customer) {
-            return res.status(404).json({ message: 'Customer not found' });
-        }
-
-        // Search for customer's email
         const user = await WaytrixUser.findOne({ _id: customerId });
-        console.log(user);
-        if (redeemKey != user.redeemKey) {
-            return res.status(404).json({ message: 'User not authorized, wrong redeem key' });
-        }
-        if (!user) {
-            return res.status(404).json({ message: 'User not found' });
+
+        if (!customer || !user) {
+            return res.status(404).json({ message: 'Customer or user not found' });
         }
 
-        // Log customer email
-        console.log('Customer Email:', user.email);
-        console.log('pointsssssssssss: ', customer.points);
-        // Check if the customer has enough points to redeem the voucher
+        // Check if the customer has enough points
         if (customer.points < voucher.pointsCost) {
             return res.status(400).json({ message: 'Insufficient points to redeem voucher' });
         }
 
-        // Update customer's points
+        // Deduct points and update customer details
         customer.points -= voucher.pointsCost;
         await customer.save();
 
-        // Decrement quantity of voucher
+        // Reduce voucher quantity
         voucher.Quantity -= 1;
         if (voucher.Quantity === 0) {
             voucher.active = false;
         }
         await voucher.save();
 
-        // Update voucherNum for the restaurant
+        // Update restaurant's voucher count
         const restoUser = await WaytrixUser.findOne({ _id: restoId });
         if (restoUser) {
-            if (restoUser.voucherNum === undefined) {
-                restoUser.voucherNum = 1;
-            } else {
-                restoUser.voucherNum += 1;
-            }
+            restoUser.voucherNum = (restoUser.voucherNum || 0) + 1;
             await restoUser.save();
         } else {
             return res.status(404).json({ message: 'Restaurant not found' });
         }
 
-        // Send professional emails
+        // Send notification emails
         const transporter = nodemailer.createTransport({
             service: 'yahoo',
             auth: {
@@ -189,25 +170,17 @@ const Redeem = async (req, res) => {
             to: [voucher.email, user.email, 'superadmin@gmail.com'],
             subject: 'Voucher Redeemed Successfully',
             html: `
-        <div style="background-color: #000; color: #fff; font-family: Arial, sans-serif; padding: 20px; border: 1px solid #fff;">
-            <div style="border-bottom: 2px solid #fff; padding-bottom: 10px; margin-bottom: 20px;">
-                <h1 style="color: #fff;">Voucher Redeemed Successfully</h1>
-            </div>
-            <p style="color: #fff;">Dear <strong>${user.name}</strong>,</p>
-            <p style="color: #ccc;">Congratulations! You have successfully redeemed your voucher for <strong>${voucher.name}</strong>.</p>
-            <p style="color: #fff;">Voucher owner email: <strong>${voucher.email}</strong></p>
-            <div style="border-top: 2px solid #fff; padding-top: 10px; margin-top: 20px;">
-                <p style="color: #fff;">For any inquiries, please contact us at <strong>waytrix@gmail.com</strong>.</p>
-                <p style="color: #ccc;">Winner contact info:</p>
-                <p style="color: #fff;">Email: <strong>${user.email}</strong></p>
-                <p style="color: #fff;">Phone: <strong>${user.phone}</strong></p>
-            </div>
-            <div style="margin-top: 30px;">
-                <p style="color: #ccc;">Best regards,</p>
-                <p style="color: #fff;"><strong>Waytrix</strong></p>
-            </div>
-        </div>
-    `
+                <div style="background-color: #000; color: #fff; padding: 20px; border: 1px solid #fff;">
+                    <h1 style="color: #fff;">Voucher Redeemed Successfully</h1>
+                    <p>Dear ${user.name},</p>
+                    <p>Congratulations! You have successfully redeemed the voucher for <strong>${voucher.name}</strong>.</p>
+                    <p>Voucher owner's email: ${voucher.email}</p>
+                    <p>Your contact information:</p>
+                    <p>Email: ${user.email}</p>
+                    <p>Phone: ${user.phone}</p>
+                    <p>Thank you for using Waytrix!</p>
+                </div>
+            `
         };
 
         transporter.sendMail(mailOptions, (error, info) => {
@@ -219,12 +192,14 @@ const Redeem = async (req, res) => {
         });
 
         return res.status(200).json({ message: 'Voucher redeemed successfully' });
-
     } catch (error) {
         console.error(error);
         return res.status(500).json({ message: 'Internal server error' });
     }
-}
+};
+
+
+
 
 
 
@@ -245,8 +220,14 @@ const getCustomerSpinDate = async (req, res) => {
 
         // Fetch lastTimeSpinned from WaytrixGame model
         const pointsData = await WaytrixGame.findOne({ customerId }).select('lastTimeSpinned');
+
+        // Check if pointsData exists
         if (!pointsData) {
-            return res.status(404).json({ error: 'Points data not found for this user' });
+            // No WaytrixGame object exists for this customerId, return name with lastTimeSpinned = 1
+            return res.status(200).json({
+                name: user.name,
+                lastTimeSpinned: "1"
+            });
         }
 
         // Check if lastTimeSpinned is at least 24 hours old
@@ -263,6 +244,33 @@ const getCustomerSpinDate = async (req, res) => {
         res.status(500).json({ error: 'An error occurred while fetching data' });
     }
 };
+
+const getPartnersByRestoId = async (req, res) => {
+    const { restoId } = req.body;
+
+    // Validate that restoId is provided
+    if (!restoId) {
+        return res.status(400).json({ error: 'restoId is required' });
+    }
+
+    try {
+        // Fetch partners with the given restoId in their restoIdArray
+        const partners = await WaytrixPartners.find({ restoIdArray: restoId });
+
+        // If no partners are found, return a message indicating no matches
+        if (!partners.length) {
+            return res.status(404).json({ message: 'No partners found with the provided restoId' });
+        }
+
+        // Return the matching partners
+        res.status(200).json(partners);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'An error occurred while fetching partners' });
+    }
+};
+
+
 
 
 
@@ -520,4 +528,4 @@ const ContactUs = async (req, res) => {
     }
 };
 
-module.exports = {ContactUs,GetContactUs,UserRedeemInfo,AddPartner,GetAllPartners,Redeem,AddPoints,GetAllVouchers, DeletePartner, AddSurvey, GetAllSurveys, getTotalPoints, AddVoucher, getCustomerSpinDate}
+module.exports = {ContactUs,GetContactUs,UserRedeemInfo,AddPartner,GetAllPartners,Redeem,AddPoints,GetAllVouchers, DeletePartner, AddSurvey, GetAllSurveys, getTotalPoints, AddVoucher, getCustomerSpinDate, getPartnersByRestoId}

@@ -1,6 +1,6 @@
 const express = require('express');
 const {signup, login, verifyUser, generateForgotKey, updatePassword, signupTableValet, getTableAccounts, signupWaiter} = require('../controllers/Auth');
-const { BooleanButtons, getButtonsByTableId, AddBooleanButtons, AddMenu, SearchMenuByTableId, AddCar, requestCar, GetRequestedCars, deleteCar, AddOrder, DeleteOrders, GetOrdersByWaiterId, AddCustomButtons, getCustomButtonsByTableId, getRestoSpecificCustomButtons, deleteCustomButton, get_resto_id_from_valet_id, get_resto_id_from_table_id, set_count_down_valet, get_count_down_valet } = require('../controllers/Buttons');
+const { BooleanButtons, getButtonsByTableId, AddBooleanButtons, AddMenu, SearchMenuByTableId, AddCar, requestCar, GetRequestedCars, deleteCar, AddOrder, DeleteOrders, GetOrdersByWaiterId, AddCustomButtons, getCustomButtonsByTableId, getRestoSpecificCustomButtons, deleteCustomButton, get_resto_id_from_valet_id, get_resto_id_from_table_id, set_count_down_valet, get_count_down_valet, checkAndActivateCar } = require('../controllers/Buttons');
 const { RestoAuth, WaytrixAuth, TableAuth, ValetAuth, WaiterAuth, CustomerAuth } = require('../middleware/Auth');
 
 const ButtonsRouter = express.Router();
@@ -25,6 +25,7 @@ ButtonsRouter.post('/get_resto_id_from_valet_id', get_resto_id_from_valet_id);
 ButtonsRouter.post('/get_resto_id_from_table_id', get_resto_id_from_table_id);
 ButtonsRouter.post('/set_count_down_valet', set_count_down_valet);
 ButtonsRouter.post('/get_count_down_valet', get_count_down_valet);
+ButtonsRouter.post('/checkAndActivateCar', checkAndActivateCar);
 
 
 
