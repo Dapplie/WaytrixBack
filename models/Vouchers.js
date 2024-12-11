@@ -22,6 +22,10 @@ const VouchersSchema = new mongoose.Schema(
       type: Number,
       required: true
     },
+    partnerId: {
+      type: String,
+      required: false
+    },
    
     Quantity: {
         type: Number,

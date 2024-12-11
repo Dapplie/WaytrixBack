@@ -123,6 +123,20 @@ const Redeem = async (req, res) => {
             return res.status(404).json({ message: 'Voucher not found or not active' });
         }
 
+        // Fetch partner details
+         // Initialize partnerName as a fallback value
+         let partnerName = 'Partner';
+         let partnerPhone = 'No Phone';
+
+         // Check if the voucher has a partnerId
+         if (voucher.partnerId) {
+             const partner = await WaytrixPartners.findOne({ _id: voucher.partnerId });
+             if (partner) {
+                 partnerName = partner.name;
+                 partnerPhone = partner.phone;
+             }
+         }
+
         // Fetch customer and user details
         const customer = await WaytrixGame.findOne({ customerId });
         const user = await WaytrixUser.findOne({ _id: customerId });
@@ -161,44 +175,148 @@ const Redeem = async (req, res) => {
             service: 'yahoo',
             auth: {
                 user: 'pierreghoul@yahoo.com',
-                pass: 'nsxmtrpmakdzduar'
-            }
+                pass: 'nsxmtrpmakdzduar',
+            },
         });
 
-        const mailOptions = {
+        // Email for the user
+        const userMailOptions = {
             from: 'pierreghoul@yahoo.com',
-            to: [voucher.email, user.email, 'superadmin@gmail.com'],
-            subject: 'Voucher Redeemed Successfully',
+            to: user.email,
+            subject: 'Voucher Redeemed!',
             html: `
-                <div style="background-color: #000; color: #fff; padding: 20px; border: 1px solid #fff;">
-                    <h1 style="color: #fff;">Voucher Redeemed Successfully</h1>
-                    <p>Dear ${user.name},</p>
-                    <p>Congratulations! You have successfully redeemed the voucher for <strong>${voucher.name}</strong>.</p>
-                    <p>Voucher owner's email: ${voucher.email}</p>
-                    <p>Your contact information:</p>
-                    <p>Email: ${user.email}</p>
-                    <p>Phone: ${user.phone}</p>
-                    <p>Thank you for using Waytrix!</p>
-                </div>
-            `
+            <div style="background-color: #000; color: #fff; padding: 20px; border: 1px solid #fff;">
+            <h1 style="color: #fff;">Voucher Redeemed Successfully</h1>
+            <p>Dear ${user.name},</p>
+            <p>Congratulations! You have successfully redeemed the voucher for ${voucher.name}</p>
+            <p>Please find below the contact information:</p>
+             <p><a href="mailto:${voucher.email}" style="color: lightblue;">${voucher.email}</a></p>
+            <p>${partnerName}</p>
+            <p>${partnerPhone}</p>
+            <p>Waytrix email: </p>
+            <p><a href="mailto:info@waytrix.com" style="color: lightblue;">info@waytrix.com</a></p>
+            <p>Thank you for using Waytrix!</p>
+        </div>
+            `,
         };
 
-        transporter.sendMail(mailOptions, (error, info) => {
-            if (error) {
-                console.error('Email error:', error);
-            } else {
-                console.log('Email sent:', info.response);
-            }
-        });
+        // Email for the voucher owner
+        const voucherMailOptions = {
+            from: 'pierreghoul@yahoo.com',
+            to: voucher.email,
+            subject: 'Voucher Redeemed',
+            html: `
+            <div style="background-color: #000; color: #fff; padding: 20px; border: 1px solid #fff;">
+                <p>Dear ${partnerName},</p>
+                <p>We would like to inform you that ${user.name} has successfully redeemed the voucher ${voucher.name}.</p>
+                <p>Customer Email: <a href="mailto:${user.email}" style="color: lightblue;">${user.email}</a></p>
+                <p>Customer Phone: ${user.phone}</p>
+                <p>Thank you for using Waytrix!</p>
+            </div>
+            `,
+        };
 
-        return res.status(200).json({ message: 'Voucher redeemed successfully' });
+        // Email for the super admin
+        const adminMailOptions = {
+            from: 'pierreghoul@yahoo.com',
+            to: 'info@waytrix.com',
+            subject: 'Voucher Redemption Notification',
+            html: `
+            <div style="background-color: #000; color: #fff; padding: 20px; border: 1px solid #fff;">
+                <p>Dear Waytrix,</p>
+                <p>${user.name} has successfully redeemed the voucher for ${partnerName}.</p>
+                <p>Customer Email: <a href="mailto:${user.email}" style="color: lightblue;">${user.email}</a></p>
+                <p>Customer Phone: ${user.phone}</p>
+                <p>Remaining Quantity: ${voucher.Quantity}</p>
+            </div>
+            `,
+        };
+
+        // Send emails
+        await transporter.sendMail(userMailOptions);
+        await transporter.sendMail(voucherMailOptions);
+        await transporter.sendMail(adminMailOptions);
+
+        return res.status(200).json({ message: 'Voucher redeemed successfully and mails sent' });
     } catch (error) {
         console.error(error);
         return res.status(500).json({ message: 'Internal server error' });
     }
 };
 
+const GetAllVouchers2 = async (req, res) => {
+    try {
+        const vouchers = await WaytrixVouchers.find();
+        res.status(200).json(vouchers);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Failed to fetch vouchers' });
+    }
+};
 
+
+const editVoucher2 = async (req, res) => {
+    try {
+      const { voucherId, name, email, description, pointsCost, Quantity, restoIdArray } = req.body;
+  
+      // Check if voucherId is provided
+      if (!voucherId) {
+        return res.status(400).json({ message: 'Voucher ID is required.' });
+      }
+  
+      // Update the voucher's details
+      const updatedVoucher = await WaytrixVouchers.findByIdAndUpdate(
+        voucherId,
+        {
+          ...(name && { name }), // Update only if provided
+          ...(email && { email }),
+          ...(description && { description }),
+          ...(pointsCost && { pointsCost }),
+          ...(Quantity && { Quantity }),
+          ...(restoIdArray && { restoIdArray }),
+        },
+        { new: true } // Return the updated document
+      );
+  
+      // If the voucher was not found
+      if (!updatedVoucher) {
+        return res.status(404).json({ message: 'Voucher not found.' });
+      }
+  
+      res.status(200).json({ message: 'Voucher updated successfully.', updatedVoucher });
+    } catch (error) {
+      console.error('Error updating voucher:', error);
+      res.status(500).json({ message: 'Internal Server Error', error });
+    }
+  };
+
+  const deleteVoucher = async (req, res) => {
+    const { voucherId } = req.body;
+
+    try {
+        // Check if voucherId is provided
+        if (!voucherId) {
+            return res.status(400).json({ message: 'Voucher ID is required.' });
+        }
+
+        // Find and update the voucher's active status
+        const updatedVoucher = await WaytrixVouchers.findByIdAndUpdate(
+            voucherId,
+            { active: false },
+            { new: true } // Return the updated document
+        );
+
+        // If the voucher does not exist
+        if (!updatedVoucher) {
+            return res.status(404).json({ message: 'Voucher not found.' });
+        }
+
+        res.status(200).json({ message: 'Voucher deactivated successfully.', updatedVoucher });
+    } catch (error) {
+        console.error('Error deactivating voucher:', error);
+        res.status(500).json({ message: 'Internal server error', error });
+    }
+};
 
 
 
@@ -290,7 +408,7 @@ const GetAllVouchers = async (req, res) => {
 };
 
 const AddVoucher = async (req, res) => {
-    const { name, description, image, pointsCost, Quantity, email, restoIdArray } = req.body;
+    const { name, description, image, pointsCost, Quantity, email, partnerId, restoIdArray } = req.body;
     
     try {
         const newVoucher = new WaytrixVouchers({
@@ -300,6 +418,7 @@ const AddVoucher = async (req, res) => {
             pointsCost,
             Quantity,
             email,
+            partnerId,
             restoIdArray,
             active:true
         });
@@ -528,4 +647,4 @@ const ContactUs = async (req, res) => {
     }
 };
 
-module.exports = {ContactUs,GetContactUs,UserRedeemInfo,AddPartner,GetAllPartners,Redeem,AddPoints,GetAllVouchers, DeletePartner, AddSurvey, GetAllSurveys, getTotalPoints, AddVoucher, getCustomerSpinDate, getPartnersByRestoId}
+module.exports = {ContactUs,GetContactUs,UserRedeemInfo,AddPartner,GetAllPartners,Redeem,AddPoints,GetAllVouchers, DeletePartner, AddSurvey, GetAllSurveys, getTotalPoints, AddVoucher, getCustomerSpinDate, getPartnersByRestoId, GetAllVouchers2, editVoucher2, deleteVoucher}
